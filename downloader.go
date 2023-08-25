@@ -16,48 +16,54 @@ import (
 )
 
 const (
-	tmpFileSuffix = ".part"
+	tmpFileSuffix  = ".part"
 	fileWriteChunk = 1 << 12
-	fileReadChunk = 1 << 12
+	fileReadChunk  = 1 << 12
 )
 
 // Info gathered from different sources
 type urlInfo struct {
-	url string
-	fileLength int64
-	etag string
+	url         string
+	fileLength  int64
+	etag        string
 	connSuccess bool
-	statusCode int
+	statusCode  int
 }
 
 // Chunk boundaries
 type Chunk struct {
 	Begin int64
-	End int64
+	End   int64
 }
 
 // Progress feedback type
 type ConnectionProgress struct {
-	Id int
-	Begin int64
-	End int64
+	Id      int
+	Begin   int64
+	End     int64
 	Current int64
 }
 
 // The file downloader
 type MultiDownloader struct {
-	urls []string            // List of all sources for the file
-	nConns int               // Number of max concurrent connections to use
-	timeout time.Duration    // Timeout for all connections
-	fileLength int64         // Size of the file. It could be larger than 4GB.
-	filename string          // Output filename
-	partFilename string      // Incomplete output filename
-	ETag string              // ETag (if available) of the file
-	chunks []Chunk           // A table of the chunks the file is divided into
+	urls         []string      // List of all sources for the file
+	nConns       int           // Number of max concurrent connections to use
+	timeout      time.Duration // Timeout for all connections
+	fileLength   int64         // Size of the file. It could be larger than 4GB.
+	filename     string        // Output filename
+	partFilename string        // Incomplete output filename
+	ETag         string        // ETag (if available) of the file
+	chunks       []Chunk       // A table of the chunks the file is divided into
 }
 
-func NewMultiDownloader(urls []string, nConns int, timeout time.Duration) *MultiDownloader {
-	return &MultiDownloader{urls: urls, nConns: nConns, timeout: timeout}
+func NewMultiDownloader(
+	urls []string,
+	nConns int,
+	timeout time.Duration) *MultiDownloader {
+	return &MultiDownloader{
+		urls:    urls,
+		nConns:  nConns,
+		timeout: timeout}
 }
 
 // Get the info of the file, using the HTTP HEAD request
@@ -70,7 +76,7 @@ func (dldr *MultiDownloader) GatherInfo() (chunks []Chunk, err error) {
 	defer close(results)
 
 	// Connect to all sources concurrently
-	getHead := func (url string) {
+	getHead := func(url string) {
 		client := http.Client{
 			Timeout: time.Duration(dldr.timeout),
 		}
@@ -87,11 +93,11 @@ func (dldr *MultiDownloader) GatherInfo() (chunks []Chunk, err error) {
 			flen = 0
 		}
 		results <- urlInfo{
-			url: url,
-			fileLength: flen,
-			etag: etag,
+			url:         url,
+			fileLength:  flen,
+			etag:        etag,
 			connSuccess: true,
-			statusCode: resp.StatusCode,
+			statusCode:  resp.StatusCode,
 		}
 	}
 	for _, url := range dldr.urls {
@@ -104,7 +110,8 @@ func (dldr *MultiDownloader) GatherInfo() (chunks []Chunk, err error) {
 		r := <-results
 		resArray[i] = r
 		if !r.connSuccess || r.statusCode != 200 {
-			return nil, errors.New(fmt.Sprintf("Failed connection to URL %s", resArray[i].url))
+			return nil, errors.New(
+				fmt.Sprintf("Failed connection to URL %s", resArray[i].url))
 		}
 	}
 
@@ -113,13 +120,14 @@ func (dldr *MultiDownloader) GatherInfo() (chunks []Chunk, err error) {
 	commonFileLength := resArray[0].fileLength
 	commonEtag := resArray[0].etag
 	for _, r := range resArray[1:] {
-		if r.fileLength != commonFileLength || (len(r.etag) != 0 && r.etag != commonEtag) {
+		if r.fileLength != commonFileLength ||
+			(len(r.etag) != 0 && r.etag != commonEtag) {
 			return nil, errors.New("URLs must point to the same file")
 		}
 	}
 	dldr.fileLength = commonFileLength
 	if commonEtag != "" {
-		dldr.ETag = commonEtag[1:len(commonEtag)-1] // Remove the surrounding ""
+		dldr.ETag = commonEtag[1 : len(commonEtag)-1] // Remove the surrounding ""
 	}
 	dldr.filename = urlToFilename(resArray[0].url)
 	dldr.partFilename = dldr.filename + tmpFileSuffix
@@ -191,7 +199,7 @@ func (dldr *MultiDownloader) buildChunks() {
 // is available to accomodate the request. In any case, setting a reasonable limit is left to the
 // Take into consideration that some servers may ban your IP for some amount of time if you flood
 // them with too many requests.
-func (dldr *MultiDownloader) Download( feedbackFunc func ([]ConnectionProgress) ) (err error) {
+func (dldr *MultiDownloader) Download(feedbackFunc func([]ConnectionProgress)) (err error) {
 	done := make(chan bool)
 	failed := make(chan bool)
 	available := make(chan bool, dldr.nConns)
@@ -203,22 +211,22 @@ func (dldr *MultiDownloader) Download( feedbackFunc func ([]ConnectionProgress) 
 		numUrls := len(dldr.urls)
 		for {
 			// Block until there are connections available (all goroutines at first)
-			<- available
+			<-available
 
 			for try := 0; try < numUrls; try++ { // Try each URL before signaling failure
 				client := &http.Client{}
 				// Select URL in a Round-Robin fashion, each try is done with the next i
-				selectedUrl := dldr.urls[(i+try) % numUrls]
+				selectedUrl := dldr.urls[(i+try)%numUrls]
 
 				// Send per-range requests
 				req, err := http.NewRequest("GET", selectedUrl, nil)
 				if err != nil {
-					continue;
+					continue
 				}
 				req.Header.Add("Range", fmt.Sprintf("bytes=%d-%d", dldr.chunks[i].Begin, dldr.chunks[i].End))
 				resp, err := client.Do(req)
 				if err != nil {
-					continue;
+					continue
 				}
 				defer resp.Body.Close()
 
@@ -243,9 +251,9 @@ func (dldr *MultiDownloader) Download( feedbackFunc func ([]ConnectionProgress) 
 					// Send progress if feedback function is provided
 					if feedbackFunc != nil {
 						progress <- ConnectionProgress{
-							Id: i,
-							Begin: dldr.chunks[i].Begin,
-							End: dldr.chunks[i].End,
+							Id:      i,
+							Begin:   dldr.chunks[i].Begin,
+							End:     dldr.chunks[i].End,
 							Current: cursor,
 						}
 					}
@@ -273,9 +281,9 @@ func (dldr *MultiDownloader) Download( feedbackFunc func ([]ConnectionProgress) 
 		progressArray := make([]ConnectionProgress, dldr.nConns)
 		for i := 0; i < dldr.nConns; i++ {
 			progressArray[i] = ConnectionProgress{
-				Id: i,
-				Begin: dldr.chunks[i].Begin,
-				End: dldr.chunks[i].End,
+				Id:      i,
+				Begin:   dldr.chunks[i].Begin,
+				End:     dldr.chunks[i].End,
 				Current: dldr.chunks[i].Begin,
 			}
 		}
@@ -297,10 +305,10 @@ func (dldr *MultiDownloader) Download( feedbackFunc func ([]ConnectionProgress) 
 	for remainingChunks > 0 {
 		// Block until a goroutine either succeeded or failed
 		select {
-		case <- done:
+		case <-done:
 			remainingChunks--
 			available <- true // Does not block up to nConns items
-		case <- failed:
+		case <-failed:
 			failedCount++
 			if failedCount >= dldr.nConns {
 				return errors.New("The file couldn't be downloaded from any source. Aborting.")
@@ -326,7 +334,7 @@ func (dldr *MultiDownloader) CheckSHA256(sha256hash string) (err error) {
 	}()
 
 	// Compute the SHA256
-	buf := make([] byte, fileReadChunk)
+	buf := make([]byte, fileReadChunk)
 	hash := sha256.New()
 	for {
 		n, err := file.Read(buf)
@@ -347,7 +355,10 @@ func (dldr *MultiDownloader) CheckSHA256(sha256hash string) (err error) {
 	computedSHA256 := fmt.Sprintf("%x", computedSHA256bytes)
 
 	if computedSHA256 != sha256hash {
-		return errors.New(fmt.Sprintf("Computed SHA256 does not match: provided=%s computed=%s", sha256hash, computedSHA256))
+		return errors.New(
+			fmt.Sprintf(
+				"Computed SHA256 does not match: provided=%s computed=%s",
+				sha256hash, computedSHA256))
 	}
 	return nil
 }
@@ -366,7 +377,7 @@ func (dldr *MultiDownloader) CheckMD5(md5sum string) (err error) {
 	}()
 
 	// Compute the MD5SUM
-	buf := make([] byte, fileReadChunk)
+	buf := make([]byte, fileReadChunk)
 	hash := md5.New()
 	for {
 		n, err := file.Read(buf)
@@ -387,11 +398,13 @@ func (dldr *MultiDownloader) CheckMD5(md5sum string) (err error) {
 	computedMD5SUM := fmt.Sprintf("%x", computedMD5SUMbytes)
 
 	if computedMD5SUM != md5sum {
-		return errors.New(fmt.Sprintf("Computed MD5SUM does not match: provided=%s computed=%s", md5sum, computedMD5SUM))
+		return errors.New(
+			fmt.Sprintf(
+				"Computed MD5SUM does not match: provided=%s computed=%s",
+				md5sum, computedMD5SUM))
 	}
 	return nil
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Auxiliary functions

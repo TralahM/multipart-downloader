@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestNoArgs (t *testing.T) {
+func TestNoArgs(t *testing.T) {
 	cmd := exec.Command("../godl")
 	err := cmd.Run()
 	if err == nil { // exit code 0
@@ -14,7 +14,7 @@ func TestNoArgs (t *testing.T) {
 	}
 }
 
-func TestNoUrls (t *testing.T) {
+func TestNoUrls(t *testing.T) {
 	cmd := exec.Command("../godl", "-n", "10")
 	err := cmd.Run()
 	if err == nil { // exit code 0
@@ -22,7 +22,7 @@ func TestNoUrls (t *testing.T) {
 	}
 }
 
-func TestWrongUrl (t *testing.T) {
+func TestWrongUrl(t *testing.T) {
 	cmd := exec.Command("../godl", "http://example.com/nothing")
 	err := cmd.Run()
 	if err == nil { // exit code 0
@@ -30,11 +30,16 @@ func TestWrongUrl (t *testing.T) {
 	}
 }
 
-func TestUrl (t *testing.T) {
-	cmd := exec.Command("../godl", "-o", "tmp_file", "https://raw.githubusercontent.com/alvatar/multipart-downloader/master/LICENSE")
+func TestUrl(t *testing.T) {
+	cmd := exec.Command(
+		"../godl",
+		"-o",
+		"tmp_file",
+		"https://raw.githubusercontent.com/alvatar/multipart-downloader/master/LICENSE")
 	err := cmd.Run()
 	if err != nil {
-		t.Error("Running godl with -o output_file and an URL should be successful")
+		t.Error(
+			"Running godl with -o output_file and an URL should be successful")
 		return
 	}
 	if _, err := os.Stat("tmp_file"); os.IsNotExist(err) {

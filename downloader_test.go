@@ -2,10 +2,10 @@ package multipartdownloader
 
 import (
 	"bytes"
-	"net"
-	"net/http"
 	"io/ioutil"
 	"log"
+	"net"
+	"net/http"
 	"os"
 	"reflect"
 	"testing"
@@ -14,7 +14,7 @@ import (
 	"github.com/hydrogen18/stoppableListener"
 )
 
-func failOnError (t *testing.T, err error) {
+func failOnError(t *testing.T, err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -22,10 +22,11 @@ func failOnError (t *testing.T, err error) {
 
 // MultiDownloader.GatherInfo() test
 // NOTE: this test will fail if the file LICENSE diverges from the repository
-func TestGatherInfo (t *testing.T) {
+func TestGatherInfo(t *testing.T) {
 	// Gather remote sources info
-	urls := []string{"https://raw.githubusercontent.com/alvatar/multipart-downloader/master/LICENSE"}
-	dldr := NewMultiDownloader(urls, 1, time.Duration(5000) * time.Millisecond)
+	urls := []string{
+		"https://raw.githubusercontent.com/alvatar/multipart-downloader/master/LICENSE"}
+	dldr := NewMultiDownloader(urls, 1, time.Duration(5000)*time.Millisecond)
 	_, err := dldr.GatherInfo()
 	failOnError(t, err)
 
@@ -40,10 +41,11 @@ func TestGatherInfo (t *testing.T) {
 }
 
 // MultiDownloader.SetupFile() test
-func TestSetupFile (t *testing.T) {
+func TestSetupFile(t *testing.T) {
 	// Gather remote sources info
-	urls := []string{"https://raw.githubusercontent.com/alvatar/multipart-downloader/master/LICENSE"}
-	dldr := NewMultiDownloader(urls, 1, time.Duration(5000) * time.Millisecond)
+	urls := []string{
+		"https://raw.githubusercontent.com/alvatar/multipart-downloader/master/LICENSE"}
+	dldr := NewMultiDownloader(urls, 1, time.Duration(5000)*time.Millisecond)
 	_, err := dldr.GatherInfo()
 	failOnError(t, err)
 
@@ -61,11 +63,11 @@ func TestSetupFile (t *testing.T) {
 	}
 }
 
-func TestUrlToFilename (t *testing.T) {
+func TestUrlToFilename(t *testing.T) {
 	testTable := []struct {
-		url string
+		url      string
 		filename string
-	} {
+	}{
 		{"https://raw.githubusercontent.com/alvatar/multipart-downloader/master/LICENSE",
 			"LICENSE"},
 		{"https://kernel.org/pub/linux/kernel/v4.x/linux-4.0.tar.xz",
@@ -83,19 +85,20 @@ func TestUrlToFilename (t *testing.T) {
 	}
 }
 
-func TestBuildChunks (t *testing.T) {
+func TestBuildChunks(t *testing.T) {
 	testTable := []struct {
 		fileLength int64
-		nConns int
-		chunks []Chunk
-	} {
-		{125, 1, []Chunk{{0, 125},}},
-		{125, 2, []Chunk{{0, 63}, {63, 125},}},
-		{125, 3, []Chunk{{0, 42}, {42, 84}, {84, 125},}},
-		{125, 4, []Chunk{{0, 32}, {32, 63}, {63, 94}, {94, 125},}},
+		nConns     int
+		chunks     []Chunk
+	}{
+		{125, 1, []Chunk{{0, 125}}},
+		{125, 2, []Chunk{{0, 63}, {63, 125}}},
+		{125, 3, []Chunk{{0, 42}, {42, 84}, {84, 125}}},
+		{125, 4, []Chunk{{0, 32}, {32, 63}, {63, 94}, {94, 125}}},
 	}
 	for _, test := range testTable {
-		urls := []string{"https://raw.githubusercontent.com/alvatar/multipart-downloader/master/LICENSE"}
+		urls := []string{
+			"https://raw.githubusercontent.com/alvatar/multipart-downloader/master/LICENSE"}
 		dldr := NewMultiDownloader(urls, test.nConns, time.Duration(1))
 		dldr.fileLength = test.fileLength
 		dldr.buildChunks()
@@ -107,9 +110,10 @@ func TestBuildChunks (t *testing.T) {
 	}
 }
 
-func downloadElQuijote(t *testing.T, urls []string, n int, delete bool) *MultiDownloader {
+func downloadElQuijote(
+	t *testing.T, urls []string, n int, delete bool) *MultiDownloader {
 	// Gather remote sources info
-	dldr := NewMultiDownloader(urls, n, time.Duration(5000) * time.Millisecond)
+	dldr := NewMultiDownloader(urls, n, time.Duration(5000)*time.Millisecond)
 	_, err := dldr.GatherInfo()
 	failOnError(t, err)
 
@@ -139,13 +143,19 @@ func downloadElQuijote(t *testing.T, urls []string, n int, delete bool) *MultiDo
 }
 
 // Test SHA256 check
-func TestCheckSHA256File (t *testing.T) {
-	dldr := downloadElQuijote(t, []string{"https://raw.githubusercontent.com/alvatar/multipart-downloader/master/test/quijote.txt"}, 1, false)
+func TestCheckSHA256File(t *testing.T) {
+	dldr := downloadElQuijote(
+		t,
+		[]string{
+			"https://raw.githubusercontent.com/alvatar/multipart-downloader/master/test/quijote.txt",
+		},
+		1, false)
 	defer func() {
 		err := os.Remove(dldr.filename)
 		failOnError(t, err)
 	}()
-	err := dldr.CheckSHA256("1e9bb1b16f8810e44d6d5ede7005258518fa976719bc2ed254308e73c357cfcc")
+	err := dldr.CheckSHA256(
+		"1e9bb1b16f8810e44d6d5ede7005258518fa976719bc2ed254308e73c357cfcc")
 	if err != nil {
 		t.Error(err)
 	}
@@ -156,8 +166,13 @@ func TestCheckSHA256File (t *testing.T) {
 }
 
 // Test MD5SUM check
-func TestCheckMD5SUMFile (t *testing.T) {
-	dldr := downloadElQuijote(t, []string{"https://raw.githubusercontent.com/alvatar/multipart-downloader/master/test/quijote.txt"}, 1, false)
+func TestCheckMD5SUMFile(t *testing.T) {
+	dldr := downloadElQuijote(
+		t,
+		[]string{
+			"https://raw.githubusercontent.com/alvatar/multipart-downloader/master/test/quijote.txt",
+		},
+		1, false)
 	defer func() {
 		err := os.Remove(dldr.filename)
 		failOnError(t, err)
@@ -175,15 +190,20 @@ func TestCheckMD5SUMFile (t *testing.T) {
 }
 
 // Test download with 1 remote source
-func Test1SourceRemote (t *testing.T) {
+func Test1SourceRemote(t *testing.T) {
 	nConns := []int{1, 2, 5, 10}
 	for _, n := range nConns {
-		downloadElQuijote(t, []string{"https://raw.githubusercontent.com/alvatar/multipart-downloader/master/test/quijote.txt"}, n, true)
+		downloadElQuijote(
+			t,
+			[]string{
+				"https://raw.githubusercontent.com/alvatar/multipart-downloader/master/test/quijote.txt",
+			},
+			n, true)
 	}
 }
 
 // Test download with 2 remote sources
-func Test2SourcesRemote (t *testing.T) {
+func Test2SourcesRemote(t *testing.T) {
 	nConns := []int{1, 2, 7, 19}
 	for _, n := range nConns {
 		downloadElQuijote(t,
@@ -198,7 +218,7 @@ func Test2SourcesRemote (t *testing.T) {
 
 // Test download with a connection drop from one of the sources
 // This test also triggers the server connection limit case
-func TestConnectionDropLocal (t *testing.T) {
+func TestConnectionDropLocal(t *testing.T) {
 	shutdown := make(chan bool)
 
 	go func() {
@@ -218,7 +238,7 @@ func TestConnectionDropLocal (t *testing.T) {
 		go server.Serve(sl)
 
 		// Stop this listener when the signal is received
-		<- shutdown
+		<-shutdown
 		sl.Stop()
 	}()
 
@@ -239,13 +259,13 @@ func TestConnectionDropLocal (t *testing.T) {
 		go server.Serve(sl)
 
 		// Stop this listener when the signal is received
-		<- shutdown
+		<-shutdown
 		sl.Stop()
 	}()
 
 	// Wait for 50 milliseconds for listeners to be ready
 	timer := time.NewTimer(time.Millisecond * 50)
-	<- timer.C
+	<-timer.C
 
 	go downloadElQuijote(t, []string{
 		"http://localhost:8081/quijote.txt",
@@ -255,7 +275,7 @@ func TestConnectionDropLocal (t *testing.T) {
 	// Wait to shutdown the listeners, hopefully in the middle of the transfer
 	// TODO: Are transfers shut down off non-gracefully (as we wish)
 	timer = time.NewTimer(time.Millisecond * 50)
-	<- timer.C
+	<-timer.C
 	shutdown <- true
 	shutdown <- true
 }

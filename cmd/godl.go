@@ -7,16 +7,19 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
 	md "github.com/alvatar/multipart-downloader"
 )
 
 var (
-	nConns   = flag.Uint("n", 1, "Number of concurrent connections")
-	sha256   = flag.String("S", "", "File containing SHA-256 hash, or a SHA-256 string")
-	useEtag  = flag.Bool("E", false, "Verify using ETag as MD5")
-	timeout  = flag.Uint("t", 5000, "Timeout for all connections in milliseconds")
-	output   = flag.String("o", "", "Output file")
-	verbose  = flag.Bool("v", false, "Verbose output")
+	nConns = flag.Uint("n", 1, "Number of concurrent connections")
+	sha256 = flag.String(
+		"S", "", "File containing SHA-256 hash, or a SHA-256 string")
+	useEtag = flag.Bool("E", false, "Verify using ETag as MD5")
+	timeout = flag.Uint(
+		"t", 5000, "Timeout for all connections in milliseconds")
+	output  = flag.String("o", "", "Output file")
+	verbose = flag.Bool("v", false, "Verbose output")
 )
 
 func exitOnError(err error) {
@@ -49,11 +52,15 @@ func main() {
 	}()
 
 	if *verbose {
-		log.Println("Initializing download with", *nConns, "concurrent connections")
+		log.Println(
+			"Initializing download with", *nConns, "concurrent connections")
 	}
 
 	// Initialize download
-	dldr := md.NewMultiDownloader(flag.Args(), int(*nConns), time.Duration(*timeout) * time.Millisecond)
+	dldr := md.NewMultiDownloader(
+		flag.Args(),
+		int(*nConns),
+		time.Duration(*timeout)*time.Millisecond)
 	md.SetVerbose(*verbose)
 
 	// Gather info from all sources
@@ -68,9 +75,10 @@ func main() {
 	if *verbose {
 		// Setup bar visualization
 		v := NewProgress(chunks)
-		err = dldr.Download(func(feedback []md.ConnectionProgress) {
-			v.Update(feedback)
-		})
+		err = dldr.Download(
+			func(feedback []md.ConnectionProgress) {
+				v.Update(feedback)
+			})
 	} else {
 		err = dldr.Download(nil)
 	}
