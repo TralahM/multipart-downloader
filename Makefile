@@ -1,7 +1,7 @@
 .PHONY: clean
 
 all:
-	go install
+	go get
 	go build cmd/godl.go cmd/progress.go
 
 test: all
